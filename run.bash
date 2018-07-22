@@ -1,0 +1,12 @@
+python script/experiment/train.py \
+-d '(6,)' \
+--dataset market1501 \
+--normalize_feature false \
+-glw 1 \
+-llw 0 \
+-idlw 0 \
+--only_test true \
+--set_seed true \
+--exp_dir train_test_tmp \
+--model_weight_file ~/reid/pretrained_model/model_weight.pth  \
+--eval_crop true

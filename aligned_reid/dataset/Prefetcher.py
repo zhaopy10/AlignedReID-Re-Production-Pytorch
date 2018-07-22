@@ -105,6 +105,7 @@ class Enqueuer(object):
       incremented, ptr = self.ptr.increment()
       if incremented:
         element = self.get_element(ptr - 1)
+        #print('element', element)
         # When enqueuing, keep an eye on the stop and reset signal.
         while not self.stop_event.isSet() and not self.reset_event.isSet():
           try:

@@ -18,6 +18,8 @@ import argparse
 
 from aligned_reid.dataset import create_dataset
 from aligned_reid.model.Model import Model
+from aligned_reid.model.myModel import myModel
+from aligned_reid.model.resnet import resnet50
 from aligned_reid.model.TripletLoss import TripletLoss
 from aligned_reid.model.loss import global_loss
 from aligned_reid.model.loss import local_loss
@@ -81,6 +83,14 @@ class Config(object):
     parser.add_argument('--staircase_decay_multiply_factor',
                         type=float, default=0.1)
     parser.add_argument('--total_epochs', type=int, default=150)
+    
+    parser.add_argument('--eval_crop', type=str2bool, default=False)
+    parser.add_argument('--eval_down', type=str2bool, default=False)
+    parser.add_argument('--eval_padding', type=str2bool, default=False)
+    
+    parser.add_argument('--train_crop', type=str2bool, default=False)
+    parser.add_argument('--train_down', type=str2bool, default=False)
+    parser.add_argument('--train_padding', type=str2bool, default=False)
 
     args = parser.parse_known_args()[0]
 
@@ -132,6 +142,14 @@ class Config(object):
     self.test_final_batch = True
     self.test_mirror_type = ['random', 'always', None][2]
     self.test_shuffle = False
+    
+    self.eval_crop = args.eval_crop
+    self.eval_down = args.eval_down
+    self.eval_padding = args.eval_padding
+    
+    self.train_crop = args.train_crop
+    self.train_down = args.train_down
+    self.train_padding = args.train_padding
 
     dataset_kwargs = dict(
       name=self.dataset,
@@ -154,7 +172,10 @@ class Config(object):
       crop_prob=self.crop_prob,
       crop_ratio=self.crop_ratio,
       mirror_type=self.train_mirror_type,
-      prng=prng)
+      prng=prng,
+      train_crop=self.train_crop,
+      train_down=self.train_down,
+      train_padding=self.train_padding)
     self.train_set_kwargs.update(dataset_kwargs)
 
     prng = np.random
@@ -166,7 +187,10 @@ class Config(object):
       final_batch=self.test_final_batch,
       shuffle=self.test_shuffle,
       mirror_type=self.test_mirror_type,
-      prng=prng)
+      prng=prng,
+      eval_crop=self.eval_crop,
+      eval_down=self.eval_down,
+      eval_padding=self.eval_padding)
     self.test_set_kwargs.update(dataset_kwargs)
 
     ###############
@@ -278,6 +302,7 @@ class ExtractFeature(object):
     # dropout.
     self.model.eval()
     ims = Variable(self.TVT(torch.from_numpy(ims).float()))
+    #print('ims shape', ims.shape)
     global_feat, local_feat = self.model(ims)[:2]
     global_feat = global_feat.data.cpu().numpy()
     local_feat = local_feat.data.cpu().numpy()
@@ -332,6 +357,7 @@ def main():
 
   model = Model(local_conv_out_channels=cfg.local_conv_out_channels,
                 num_classes=len(train_set.ids2labels))
+
   # Model wrapper
   model_w = DataParallel(model)
 
@@ -356,6 +382,7 @@ def main():
 
   if cfg.resume:
     resume_ep, scores = load_ckpt(modules_optims, cfg.ckpt_file)
+    #print('resume_ep', resume_ep)
 
   # May Transfer Models and Optims to Specified Device. Transferring optimizer
   # is to cope with the case when you load the checkpoint to a new device.
@@ -368,6 +395,7 @@ def main():
   def test(load_model_weight=False):
     if load_model_weight:
       if cfg.model_weight_file != '':
+        print('Enter test')
         map_location = (lambda storage, loc: storage)
         sd = torch.load(cfg.model_weight_file, map_location=map_location)
         load_state_dict(model, sd)
@@ -379,11 +407,15 @@ def main():
                          and cfg.local_dist_own_hard_sample
 
     for test_set, name in zip(test_sets, test_set_names):
+      print('test_set ', test_set, 'name', name)
       test_set.set_feat_func(ExtractFeature(model_w, TVT))
       print('\n=========> Test on dataset: {} <=========\n'.format(name))
-      test_set.eval(
+      mAP, cmc_scores = test_set.eval(
         normalize_feat=cfg.normalize_feature,
         use_local_distance=use_local_distance)
+      print('mAP',mAP)
+      print('cmc_scores',cmc_scores)
+      return mAP, cmc_scores
 
   if cfg.only_test:
     test(load_model_weight=True)
@@ -392,6 +424,7 @@ def main():
   ############
   # Training #
   ############
+
 
   start_ep = resume_ep if cfg.resume else 0
   for ep in range(start_ep, cfg.total_epochs):
@@ -439,6 +472,7 @@ def main():
       step_st = time.time()
 
       ims, im_names, labels, mirrored, epoch_done = train_set.next_batch()
+      #print('batch size', ims.shape[0])
 
       ims_var = Variable(TVT(torch.from_numpy(ims).float()))
       labels_t = TVT(torch.from_numpy(labels).long())
@@ -585,7 +619,6 @@ def main():
     print(log)
 
     # Log to TensorBoard
-
     if cfg.log_to_file:
       if writer is None:
         writer = SummaryWriter(log_dir=osp.join(cfg.exp_dir, 'tensorboard'))
@@ -616,6 +649,12 @@ def main():
         dict(local_dist_ap=l_dist_ap_meter.avg,
              local_dist_an=l_dist_an_meter.avg, ),
         ep)
+      if (ep+1) % 50 == 0:
+        mAP, cmc_scores = test(load_model_weight=False)
+        writer.add_scalars('mAP', dict(mAP=mAP,rank_1=cmc_scores[0],rank_5=cmc_scores[4]),ep)
+        graph_file = osp.join(cfg.exp_dir, 'graph.pth')
+        print('save graph to', graph_file)
+        torch.save(modules_optims[0], graph_file)
 
     # save ckpt
     if cfg.log_to_file:

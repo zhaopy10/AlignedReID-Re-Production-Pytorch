@@ -15,6 +15,7 @@ from ..utils.distance import normalize
 from ..utils.distance import compute_dist
 from ..utils.distance import local_dist
 from ..utils.distance import low_memory_matrix_op
+from ..utils.extend import extend_ims
 
 
 class TestSet(Dataset):
@@ -37,6 +38,9 @@ class TestSet(Dataset):
       separate_camera_set=None,
       single_gallery_shot=None,
       first_match_break=None,
+      eval_crop=False,
+      eval_down=False,
+      eval_padding=False,
       **kwargs):
 
     super(TestSet, self).__init__(dataset_size=len(im_names), **kwargs)
@@ -49,6 +53,10 @@ class TestSet(Dataset):
     self.separate_camera_set = separate_camera_set
     self.single_gallery_shot = single_gallery_shot
     self.first_match_break = first_match_break
+    
+    self.eval_crop = eval_crop
+    self.eval_down = eval_down
+    self.eval_padding = eval_padding
 
   def set_feat_func(self, extract_feat_func):
     self.extract_feat_func = extract_feat_func
@@ -57,24 +65,57 @@ class TestSet(Dataset):
     im_name = self.im_names[ptr]
     im_path = osp.join(self.im_dir, im_name)
     im = np.asarray(Image.open(im_path))
-    im, _ = self.pre_process_im(im)
+    #print('im size', im.shape)
+    
+    # test 
+    tmp_ims, extended_num = extend_ims(im, crop=self.eval_crop, down_sample=self.eval_down, padding=self.eval_padding)
+    extended_ims, _ = zip(*[self.pre_process_im(im) for im in tmp_ims])
+    
+    #im, _ = self.pre_process_im(extended_ims)
+    #print('preprocessed im size', im.shape)
     id = parse_im_name(self.im_names[ptr], 'id')
     cam = parse_im_name(self.im_names[ptr], 'cam')
     # denoting whether the im is from query, gallery, or multi query set
     mark = self.marks[ptr]
-    return im, id, cam, im_name, mark
+    
+    if extended_num == 1:
+      extended_ims = extended_ims[np.newaxis,:]
+    
+    #extended_ids = [], extended_cams = [], extended_im_names = [], extended_marks = []
+    extended_ids = [id for i in range(0, extended_num)]
+    extended_cams = [cam for i in range(0, extended_num)]
+    extended_im_names = [im_name for i in range(0, extended_num)]
+    extended_marks = [mark for i in range(0, extended_num)]
+    #print('im get_sample', type(im), len(im))
+    return extended_ims, extended_ids, extended_cams, extended_im_names, extended_marks
 
   def next_batch(self):
     if self.epoch_done and self.shuffle:
       self.prng.shuffle(self.im_names)
     samples, self.epoch_done = self.prefetcher.next_batch()
     im_list, ids, cams, im_names, marks = zip(*samples)
+    # im_list is a tuple
+    #print('im_list', type(im_list), len(im_list))
+    
+    
     # Transform the list into a numpy array with shape [N, ...]
+    '''
     ims = np.stack(im_list, axis=0)
+    print('ims',type(ims),ims.shape)
     ids = np.array(ids)
     cams = np.array(cams)
     im_names = np.array(im_names)
     marks = np.array(marks)
+    ''' 
+    
+    ims = np.stack(np.concatenate(im_list))
+    ids = np.concatenate(ids)
+    cams = np.concatenate(cams)
+    im_names = np.concatenate(im_names)
+    marks = np.concatenate(marks)
+    
+    print('ims',type(ims),ims.shape)
+    
     return ims, ids, cams, im_names, marks, self.epoch_done
 
   def extract_feat(self, normalize_feat):
@@ -117,6 +158,8 @@ class TestSet(Dataset):
         else:
           # Clean the current line
           sys.stdout.write("\033[F\033[K")
+        #print('ims_ size: ', ims_.shape)
+        #print('global_feat size: ', global_feat.shape)
         print('{}/{} batches done, +{:.2f}s, total {:.2f}s'
               .format(step, total_batches,
                       time.time() - last_time, time.time() - st))
@@ -186,6 +229,7 @@ class TestSet(Dataset):
     with measure_time('Extracting feature...'):
       global_feats, local_feats, ids, cams, im_names, marks = \
         self.extract_feat(normalize_feat)
+      print('global_feats size', global_feats.shape)
 
     # query, gallery, multi-query indices
     q_inds = marks == 0
@@ -219,11 +263,15 @@ class TestSet(Dataset):
 
     with measure_time('Computing global distance...'):
       # query-gallery distance using global distance
+      print('q_inds size', np.sum(q_inds))
+      print('g_inds size', np.sum(g_inds))
       global_q_g_dist = compute_dist(
         global_feats[q_inds], global_feats[g_inds], type='euclidean')
+      print('global_q_g_dist size', global_q_g_dist.shape, 'global_q_g_dist', global_q_g_dist)
 
     with measure_time('Computing scores for Global Distance...'):
-      mAP, cmc_scores = compute_score(global_q_g_dist)
+      mAP_return, cmc_scores_return = compute_score(global_q_g_dist)
+    return mAP_return, cmc_scores_return
 
     if to_re_rank:
       with measure_time('Re-ranking...'):
@@ -296,5 +344,6 @@ class TestSet(Dataset):
     # multi-query
     # TODO: allow local distance in Multi Query
     mq_mAP, mq_cmc_scores = None, None
-
-    return mAP, cmc_scores, mq_mAP, mq_cmc_scores
+    #print('mAP',mAP)
+    #print('cmc_scores',cmc_scores)
+    return mAP_return, cmc_scores_return, mq_mAP, mq_cmc_scores

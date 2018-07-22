@@ -260,6 +260,9 @@ def save_ckpt(modules_optims, ep, scores, ckpt_file):
   ckpt = dict(state_dicts=state_dicts,
               ep=ep,
               scores=scores)
+  print('all variables to save:')
+  for key in ckpt:
+    print(key)
   may_make_dir(osp.dirname(osp.abspath(ckpt_file)))
   torch.save(ckpt, ckpt_file)
 
