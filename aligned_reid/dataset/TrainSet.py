@@ -108,5 +108,5 @@ class TrainSet(Dataset):
     im_names = np.concatenate(im_names)
     labels = np.concatenate(labels)
     mirrored = np.concatenate(mirrored)
-    #print('ims', type(ims), ims.shape)
+    print('ims', type(ims), ims.shape)
     return ims, im_names, labels, mirrored, self.epoch_done

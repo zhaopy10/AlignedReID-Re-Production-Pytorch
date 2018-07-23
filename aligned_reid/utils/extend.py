@@ -6,6 +6,8 @@ from scipy import io
 import torch
 import cv2
 from PIL import Image
+import math
+import random
 
 def extend_ims(ims, crop=False, down_sample=False, padding=False):
     #print('initial ims', type(ims))
@@ -57,7 +59,19 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False):
     if extend == 1:
         return ims, extend
     
+    # random sample to 2^n
+    
+    clip = math.floor(math.log(extend, 2))
+    new_size = int(math.pow(2, clip))
+    random_ims_list = []
+    random_ims_list.extend(ims_list[0:im_num])
+    random_ims_list.extend(random.sample(ims_list[im_num:], (new_size - 1) * im_num))
+    #print('new_size', new_size, len(random_ims_list), type(random_ims_list))
+    #print('original size', len(ims_list), type(ims_list))
+    extend = new_size
+    
     #ims_list = tuple(ims_list)
     #print('extended im list', extend, type(ims_list), len(ims_list))
-    return ims_list, extend
+    return random_ims_list, extend
+    #return ims_list, extend
         
