@@ -48,7 +48,7 @@ class Config(object):
     parser.add_argument('-r', '--run', type=int, default=1)
     parser.add_argument('--set_seed', type=str2bool, default=False)
     parser.add_argument('--dataset', type=str, default='market1501',
-                        choices=['market1501', 'cuhk03', 'duke', 'combined'])
+                        choices=['market1501', 'cuhk03', 'duke', 'combined','msmt17'])
     parser.add_argument('--trainset_part', type=str, default='trainval',
                         choices=['trainval', 'train'])
 
@@ -339,7 +339,7 @@ def main():
   ###########
 
   train_set = create_dataset(**cfg.train_set_kwargs)
-
+  
   test_sets = []
   test_set_names = []
   if cfg.dataset == 'combined':
@@ -350,6 +350,7 @@ def main():
   else:
     test_sets.append(create_dataset(**cfg.test_set_kwargs))
     test_set_names.append(cfg.dataset)
+  
 
   ###########
   # Models  #
@@ -402,6 +403,7 @@ def main():
         print('Loaded model weights from {}'.format(cfg.model_weight_file))
       else:
         load_ckpt(modules_optims, cfg.ckpt_file)
+        print('Loaded ckpt from {}'.format(cfg.ckpt_file))
 
     use_local_distance = (cfg.l_loss_weight > 0) \
                          and cfg.local_dist_own_hard_sample
@@ -649,22 +651,25 @@ def main():
         dict(local_dist_ap=l_dist_ap_meter.avg,
              local_dist_an=l_dist_an_meter.avg, ),
         ep)
+      '''
       if (ep+1) % 50 == 0:
         mAP, cmc_scores = test(load_model_weight=False)
         writer.add_scalars('mAP', dict(mAP=mAP,rank_1=cmc_scores[0],rank_5=cmc_scores[4]),ep)
         graph_file = osp.join(cfg.exp_dir, 'graph.pth')
         print('save graph to', graph_file)
         torch.save(modules_optims[0], graph_file)
+      '''
 
     # save ckpt
     if cfg.log_to_file:
       save_ckpt(modules_optims, ep + 1, 0, cfg.ckpt_file)
+      torch.save(model.state_dict(), osp.join(cfg.exp_dir, 'model_weights.pth'))
 
   ########
   # Test #
   ########
 
-  test(load_model_weight=False)
+  #test(load_model_weight=False)
 
 
 if __name__ == '__main__':

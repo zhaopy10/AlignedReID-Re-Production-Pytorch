@@ -69,6 +69,7 @@ class TestSet(Dataset):
     
     # test 
     tmp_ims, extended_num = extend_ims(im, crop=self.eval_crop, down_sample=self.eval_down, padding=self.eval_padding)
+    #print('tmp_ims',type(tmp_ims))
     extended_ims, _ = zip(*[self.pre_process_im(im) for im in tmp_ims])
     
     #im, _ = self.pre_process_im(extended_ims)
@@ -79,7 +80,7 @@ class TestSet(Dataset):
     mark = self.marks[ptr]
     
     if extended_num == 1:
-      extended_ims = extended_ims[np.newaxis,:]
+      extended_ims = extended_ims[0][np.newaxis,:]
     
     #extended_ids = [], extended_cams = [], extended_im_names = [], extended_marks = []
     extended_ids = [id for i in range(0, extended_num)]
@@ -114,7 +115,7 @@ class TestSet(Dataset):
     im_names = np.concatenate(im_names)
     marks = np.concatenate(marks)
     
-    print('ims',type(ims),ims.shape)
+    #print('ims',type(ims),ims.shape)
     
     return ims, ids, cams, im_names, marks, self.epoch_done
 

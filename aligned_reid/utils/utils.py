@@ -236,6 +236,13 @@ def load_ckpt(modules_optims, ckpt_file, load_to_cpu=True, verbose=True):
   map_location = (lambda storage, loc: storage) if load_to_cpu else None
   ckpt = torch.load(ckpt_file, map_location=map_location)
   for m, sd in zip(modules_optims, ckpt['state_dicts']):
+    flag = False
+    for k, _ in sd.items():
+        #print(k)
+        if k.find('fc')!=-1:
+            flag = True
+    if flag:
+        continue
     m.load_state_dict(sd)
   if verbose:
     print('Resume from ckpt {}, \nepoch {}, \nscores {}'.format(

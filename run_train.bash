@@ -1,8 +1,8 @@
 python script/experiment/train.py \
--d '(2,)' \
+-d '(5,6,)' \
 -r 1 \
---dataset market1501 \
---ids_per_batch 8 \
+--dataset combined \
+--ids_per_batch 32 \
 --ims_per_id 4 \
 --normalize_feature false \
 -gm 0.3 \
@@ -11,12 +11,12 @@ python script/experiment/train.py \
 -idlw 0 \
 --base_lr 2e-4 \
 --lr_decay_type exp \
---exp_decay_at_epoch 151 \
---total_epochs 300 \
---exp_dir train_with_mutliple_GPU \
+--exp_decay_at_epoch 200 \
+--total_epochs 400 \
+--exp_dir train_with_combined \
 --set_seed True  \
---train_crop True \
---eval_crop True \
---train_down True
+--train_crop False \
+--eval_crop False \
+--train_down False
 #--resume True \
 #--trainset_part train

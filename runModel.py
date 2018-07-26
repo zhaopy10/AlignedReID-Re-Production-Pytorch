@@ -297,6 +297,7 @@ def main():
   model = Model(local_conv_out_channels=cfg.local_conv_out_channels)
   # Model wrapper
   model_w = DataParallel(model)
+    
 
   if cfg.model_weight_file != '':
     map_location = (lambda storage, loc: storage)
@@ -304,8 +305,7 @@ def main():
     load_state_dict(model, sd)
     print('Loaded model weights from {}'.format(cfg.model_weight_file))
   else:
-    print('model_weight_file needed.')
-    return 
+    return
 
   pre_process_im = PreProcessIm(prng=np.random, resize_h_w=(256, 128), im_mean=[0.486, 0.459, 0.408], im_std=[0.229, 0.224, 0.225], mirror_type=None, batch_dims='NCHW',scale=True)
 
@@ -319,19 +319,21 @@ def main():
     print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
     img_set.append(im_preprocessed)
   '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test/ids/%d'
+  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test/dance'
   #interest_ids = ['27']
-  img_set = []
-  for i in range(11,12):
-    path_name = img_path%(i)
-    #path_name = img_path
+  
+  for i in range(1,4):
+    #path_name = img_path%(i)
+    img_set = []
+    interest_ids = [i]
+    path_name = img_path
     filenames = [f for f in listdir(path_name) if isfile(join(path_name, f))]
     file_dict = {}
     for name in filenames:
       split_names = name.split('-')
-      #if not split_names[0] in interest_ids:
-      #  continue
-      num_split = split_names[2].split('.')
+      if not int(split_names[0]) in interest_ids:
+        continue
+      num_split = split_names[1].split('.')
       file_dict[int(num_split[0])] = name
       #file_dict[split_names[0]] = name
     file_tuple = sorted(file_dict.items(),key=lambda item:item[0])
@@ -343,14 +345,14 @@ def main():
       print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
       img_set.append(im_preprocessed)
   
-  ims = np.stack(img_set, axis=0)
-  feat_extractor = ExtractFeature(model_w, TVT)
-  global_feat, local_feat = feat_extractor(ims)
-  print('Extract feature for images, global_feat', global_feat.shape, 'local_feat', local_feat.shape)
-  if cfg.normalize_feature:
-    global_feat = normalize(global_feat, axis=1)
-  global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
-  print('global_q_g_dist\n', global_q_g_dist)
+    ims = np.stack(img_set, axis=0)
+    feat_extractor = ExtractFeature(model_w, TVT)
+    global_feat, local_feat = feat_extractor(ims)
+    print('Extract feature for images, global_feat', global_feat.shape, 'local_feat', local_feat.shape)
+    if cfg.normalize_feature:
+      global_feat = normalize(global_feat, axis=1)
+    global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
+    print('global_q_g_dist\n', global_q_g_dist)
 
 if __name__ == '__main__':
   main()

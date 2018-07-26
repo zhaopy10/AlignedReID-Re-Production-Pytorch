@@ -57,7 +57,7 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False):
             #padded_im = cv2.resize(padded_im, (h, w), interpolation=cv2.INTER_LINEAR)
             ims_list.append(padded_im)
     if extend == 1:
-        return ims, extend
+        return ims_list, extend
     
     # random sample to 2^n
     

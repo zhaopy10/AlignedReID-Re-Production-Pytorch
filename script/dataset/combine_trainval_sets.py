@@ -91,6 +91,17 @@ if __name__ == '__main__':
     default=ospeu('~/Dataset/market1501/partitions.pkl')
   )
 
+  parser.add_argument(
+    '--msmt17_im_dir',
+    type=str,
+    default=ospeu('~/Dataset/market1501/images')
+  )
+  parser.add_argument(
+    '--msmt17_partition_file',
+    type=str,
+    default=ospeu('~/Dataset/market1501/partitions.pkl')
+  )
+
   cuhk03_im_type = ['detected', 'labeled'][0]
   parser.add_argument(
     '--cuhk03_im_dir',
@@ -125,11 +136,13 @@ if __name__ == '__main__':
 
   im_dirs = [
     ospap(ospeu(args.market1501_im_dir)),
+    ospap(ospeu(args.msmt17_im_dir)),
     ospap(ospeu(args.cuhk03_im_dir)),
     ospap(ospeu(args.duke_im_dir))
   ]
   partition_files = [
     ospap(ospeu(args.market1501_partition_file)),
+    ospap(ospeu(args.msmt17_partition_file)),
     ospap(ospeu(args.cuhk03_partition_file)),
     ospap(ospeu(args.duke_partition_file))
   ]

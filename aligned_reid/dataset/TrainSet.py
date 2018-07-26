@@ -69,7 +69,7 @@ class TrainSet(Dataset):
            for name in im_names]
     
     tmp_ims, extended_num = extend_ims(ims, crop=self.train_crop, down_sample=self.train_down, padding=self.train_padding)
-
+    #print('tmp_ims', type(tmp_ims), len(tmp_ims))
     extended_ims, extended_mirrored = zip(*[self.pre_process_im(im) for im in tmp_ims])
     #ims, mirrored = zip(*[self.pre_process_im(im) for im in ims])
     labels = [self.ids2labels[self.ids[ptr]] for _ in range(self.ims_per_id)]
@@ -108,5 +108,5 @@ class TrainSet(Dataset):
     im_names = np.concatenate(im_names)
     labels = np.concatenate(labels)
     mirrored = np.concatenate(mirrored)
-    print('ims', type(ims), ims.shape)
+    #print('ims', type(ims), ims.shape)
     return ims, im_names, labels, mirrored, self.epoch_done
