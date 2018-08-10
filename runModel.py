@@ -310,19 +310,28 @@ def main():
   pre_process_im = PreProcessIm(prng=np.random, resize_h_w=(256, 128), im_mean=[0.486, 0.459, 0.408], im_std=[0.229, 0.224, 0.225], mirror_type=None, batch_dims='NCHW',scale=True)
 
   '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/test_images/tik_%d.jpg'
+  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
   img_set = []
-  for i in range(0,12):
-    img_name = img_path%(i)
+  for i in range(16,22):
+    img_name = (img_path+'/%d-01.jpg')%i
     im = np.asarray(Image.open(img_name))
     im_preprocessed, _ = pre_process_im(im)
     print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
     img_set.append(im_preprocessed)
+    
+  ims = np.stack(img_set, axis=0)
+  feat_extractor = ExtractFeature(model_w, TVT)
+  global_feat, local_feat = feat_extractor(ims)
+  print('Extract feature for images, global_feat', global_feat.shape, 'local_feat', local_feat.shape)
+  if cfg.normalize_feature:
+    global_feat = normalize(global_feat, axis=1)
+  global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
+  print('global_q_g_dist\n', global_q_g_dist)
   '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test/dance'
+  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
   #interest_ids = ['27']
   
-  for i in range(1,4):
+  for i in range(0,28):
     #path_name = img_path%(i)
     img_set = []
     interest_ids = [i]
@@ -344,7 +353,7 @@ def main():
       im_preprocessed, _ = pre_process_im(im)
       print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
       img_set.append(im_preprocessed)
-  
+
     ims = np.stack(img_set, axis=0)
     feat_extractor = ExtractFeature(model_w, TVT)
     global_feat, local_feat = feat_extractor(ims)
@@ -353,6 +362,7 @@ def main():
       global_feat = normalize(global_feat, axis=1)
     global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
     print('global_q_g_dist\n', global_q_g_dist)
+  
 
 if __name__ == '__main__':
   main()

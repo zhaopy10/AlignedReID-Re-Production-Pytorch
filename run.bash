@@ -1,6 +1,6 @@
 python script/experiment/train.py \
 -d '(4,)' \
---dataset msmt17 \
+--dataset market1501 \
 --normalize_feature false \
 -glw 1 \
 -llw 0 \
