@@ -48,7 +48,7 @@ class Config(object):
     parser.add_argument('-r', '--run', type=int, default=1)
     parser.add_argument('--set_seed', type=str2bool, default=False)
     parser.add_argument('--dataset', type=str, default='market1501',
-                        choices=['market1501', 'cuhk03', 'duke', 'combined','msmt17'])
+                        choices=['market1501', 'cuhk03', 'duke', 'combined','msmt17','douyin'])
     parser.add_argument('--trainset_part', type=str, default='trainval',
                         choices=['trainval', 'train'])
 
@@ -465,6 +465,8 @@ def main():
 
     loss_meter = AverageMeter()
 
+    #mAP, cmc_scores = test(load_model_weight=False)
+    
     ep_st = time.time()
     step = 0
     epoch_done = False
@@ -651,14 +653,14 @@ def main():
         dict(local_dist_ap=l_dist_ap_meter.avg,
              local_dist_an=l_dist_an_meter.avg, ),
         ep)
-      '''
-      if (ep+1) % 50 == 0:
+      
+      if (ep+1) % 10 == 0:
         mAP, cmc_scores = test(load_model_weight=False)
-        writer.add_scalars('mAP', dict(mAP=mAP,rank_1=cmc_scores[0],rank_5=cmc_scores[4]),ep)
+        writer.add_scalars('mAP', dict(mAP=mAP,rank_1=cmc_scores[0]),ep)
         graph_file = osp.join(cfg.exp_dir, 'graph.pth')
         print('save graph to', graph_file)
         torch.save(modules_optims[0], graph_file)
-      '''
+      
 
     # save ckpt
     if cfg.log_to_file:

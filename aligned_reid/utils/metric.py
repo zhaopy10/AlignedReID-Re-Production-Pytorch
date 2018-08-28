@@ -160,7 +160,7 @@ def mean_ap(
 
   # Sort and find correct matches
   indices = np.argsort(distmat, axis=1)
-  print('indices', indices)
+  #print('indices', indices)
   matches = (gallery_ids[indices] == query_ids[:, np.newaxis])
   # Compute AP for each query
   aps = np.zeros(m)
@@ -174,9 +174,9 @@ def mean_ap(
     if not np.any(y_true): continue
     is_valid_query[i] = 1
     aps[i] = average_precision_score(y_true, y_score)
-  print('y_true', y_true)
-  print('y_score', y_score)
-  print('aps', aps)
+  #print('y_true', y_true)
+  #print('y_score', y_score)
+  #print('aps', aps)
   if len(aps) == 0:
     raise RuntimeError("No valid query")
   if average:

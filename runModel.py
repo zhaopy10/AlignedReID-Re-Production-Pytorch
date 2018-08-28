@@ -331,7 +331,7 @@ def main():
   img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
   #interest_ids = ['27']
   
-  for i in range(0,28):
+  for i in range(1,28):
     #path_name = img_path%(i)
     img_set = []
     interest_ids = [i]
@@ -343,9 +343,12 @@ def main():
       if not int(split_names[0]) in interest_ids:
         continue
       num_split = split_names[1].split('.')
-      file_dict[int(num_split[0])] = name
+      #file_dict[int(num_split[0])] = name
+      file_dict[name] = name
       #file_dict[split_names[0]] = name
+    #print(file_dict)
     file_tuple = sorted(file_dict.items(),key=lambda item:item[0])
+    #file_tuple = file_dict.items()
     print(file_tuple)
     for item in file_tuple:
       img_name = path_name + '/' + item[1]

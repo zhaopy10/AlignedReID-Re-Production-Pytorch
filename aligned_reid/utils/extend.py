@@ -21,7 +21,7 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False):
     extend = 1
     
     if crop:
-        extend += 3
+        extend += 1
         for i in range(0, im_num):
             im_data = ims_list[i]
             h = im_data.shape[0]
@@ -32,8 +32,8 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False):
             #right_part = cv2.resize(right_part, (h, w), interpolation=cv2.INTER_LINEAR)
             up_part = im_data[0:2*h/3,:]
             #up_part = cv2.resize(up_part, (h, w), interpolation=cv2.INTER_LINEAR)
-            ims_list.append(left_part)
-            ims_list.append(right_part)
+            #ims_list.append(left_part)
+            #ims_list.append(right_part)
             ims_list.append(up_part)
     
     if down_sample:
@@ -61,11 +61,12 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False):
     
     # random sample to 2^n
     
-    clip = math.floor(math.log(extend, 2))
-    new_size = int(math.pow(2, clip))
+    #clip = math.floor(math.log(extend, 2))
+    #new_size = int(math.pow(2, clip))
+    new_size = extend
     random_ims_list = []
-    random_ims_list.extend(ims_list[0:im_num])
-    random_ims_list.extend(random.sample(ims_list[im_num:], (new_size - 1) * im_num))
+    #random_ims_list.extend(ims_list[0:im_num])
+    random_ims_list.extend(random.sample(ims_list[:], new_size * im_num))
     #print('new_size', new_size, len(random_ims_list), type(random_ims_list))
     #print('original size', len(ims_list), type(ims_list))
     extend = new_size

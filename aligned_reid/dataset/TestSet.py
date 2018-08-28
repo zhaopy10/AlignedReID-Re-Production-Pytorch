@@ -230,7 +230,7 @@ class TestSet(Dataset):
     with measure_time('Extracting feature...'):
       global_feats, local_feats, ids, cams, im_names, marks = \
         self.extract_feat(normalize_feat)
-      print('global_feats size', global_feats.shape)
+      #print('global_feats size', global_feats.shape)
 
     # query, gallery, multi-query indices
     q_inds = marks == 0
@@ -264,11 +264,11 @@ class TestSet(Dataset):
 
     with measure_time('Computing global distance...'):
       # query-gallery distance using global distance
-      print('q_inds size', np.sum(q_inds))
-      print('g_inds size', np.sum(g_inds))
+      #print('q_inds size', np.sum(q_inds))
+      #print('g_inds size', np.sum(g_inds))
       global_q_g_dist = compute_dist(
         global_feats[q_inds], global_feats[g_inds], type='euclidean')
-      print('global_q_g_dist size', global_q_g_dist.shape, 'global_q_g_dist', global_q_g_dist)
+      #print('global_q_g_dist size', global_q_g_dist.shape, 'global_q_g_dist', global_q_g_dist)
 
     with measure_time('Computing scores for Global Distance...'):
       mAP_return, cmc_scores_return = compute_score(global_q_g_dist)
