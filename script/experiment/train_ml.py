@@ -49,7 +49,7 @@ class Config(object):
     parser.add_argument('-r', '--run', type=int, default=1)
     parser.add_argument('--set_seed', type=str2bool, default=False)
     parser.add_argument('--dataset', type=str, default='market1501',
-                        choices=['market1501', 'cuhk03', 'duke', 'combined'])
+                        choices=['market1501', 'cuhk03', 'duke', 'douyin', 'combined'])
     parser.add_argument('--trainset_part', type=str, default='trainval',
                         choices=['trainval', 'train'])
 
@@ -303,7 +303,7 @@ class ExtractFeature(object):
     ims = Variable(self.TVT(torch.from_numpy(ims).float()))
     global_feat, local_feat = self.model(ims)[:2]
     global_feat = global_feat.data.cpu().numpy()
-    local_feat = local_feat.data.cpu().numpy()
+    #local_feat = local_feat.data.cpu().numpy()
     # Restore the model to its old train/eval mode.
     self.model.train(old_train_eval_model)
     return global_feat, local_feat
@@ -353,9 +353,13 @@ def main():
   # Models  #
   ###########
 
+  #models = [Model(local_conv_out_channels=cfg.local_conv_out_channels,
+  #                num_classes=len(train_set.ids2labels))
+  #          for _ in range(cfg.num_models)]
   models = [Model(local_conv_out_channels=cfg.local_conv_out_channels,
-                  num_classes=len(train_set.ids2labels))
+                  num_classes=None)
             for _ in range(cfg.num_models)]
+                  
   # Model wrappers
   model_ws = [DataParallel(models[i], device_ids=relative_device_ids[i])
               for i in range(cfg.num_models)]
@@ -405,9 +409,10 @@ def main():
         test_set.set_feat_func(ExtractFeature(model_w, TVT))
         print('\n=========> Test Model #{} on dataset: {} <=========\n'
               .format(i + 1, name))
-        test_set.eval(
+        mAP, cmc_scores = test_set.eval(
           normalize_feat=cfg.normalize_feature,
           use_local_distance=use_local_distance)
+        return mAP, cmc_scores
 
   if cfg.only_test:
     test(load_model_weight=True)
@@ -465,9 +470,10 @@ def main():
       labels_t = TVT(torch.from_numpy(labels).long())
       labels_var = Variable(labels_t)
 
-      global_feat, local_feat, logits = model_w(ims_var)
-      probs = F.softmax(logits, dim=1)
-      log_probs = F.log_softmax(logits, dim=1)
+      #global_feat, local_feat, logits = model_w(ims_var)
+      global_feat, local_feat = model_w(ims_var)
+      #probs = F.softmax(logits, dim=1)
+      #log_probs = F.log_softmax(logits, dim=1)
 
       g_loss, p_inds, n_inds, g_dist_ap, g_dist_an, g_dist_mat = global_loss(
         g_tri_loss, global_feat, labels_t,
@@ -487,10 +493,10 @@ def main():
         l_dist_mat = 0
 
       id_loss = 0
-      if cfg.id_loss_weight > 0:
-        id_loss = id_criterion(logits, labels_var)
+      #if cfg.id_loss_weight > 0:
+      #  id_loss = id_criterion(logits, labels_var)
 
-      probs_list[i] = probs
+      #probs_list[i] = probs
       g_dist_mat_list[i] = g_dist_mat
       l_dist_mat_list[i] = l_dist_mat
 
@@ -510,11 +516,11 @@ def main():
 
       # Probability Mutual Loss (KL Loss)
       pm_loss = 0
-      if (cfg.num_models > 1) and (cfg.pm_loss_weight > 0):
-        for j in range(cfg.num_models):
-          if j != i:
-            pm_loss += F.kl_div(log_probs, TVT(probs_list[j]).detach(), False)
-        pm_loss /= 1. * (cfg.num_models - 1) * len(ims)
+      #if (cfg.num_models > 1) and (cfg.pm_loss_weight > 0):
+      #  for j in range(cfg.num_models):
+      #    if j != i:
+      #      pm_loss += F.kl_div(log_probs, TVT(probs_list[j]).detach(), False)
+      #  pm_loss /= 1. * (cfg.num_models - 1) * len(ims)
 
       # Global Distance Mutual Loss (L2 Loss)
       gdm_loss = 0
@@ -834,6 +840,12 @@ def main():
         dict(local_dist_ap=l_dist_ap_meter.avg,
              local_dist_an=l_dist_an_meter.avg, ),
         ep)
+      if (ep+1) % 10 == 0:
+        mAP, cmc_scores = test(load_model_weight=False)
+        writer.add_scalars('mAP', dict(mAP=mAP,rank_1=cmc_scores[0]),ep)
+        graph_file = osp.join(cfg.exp_dir, 'graph.pth')
+        print('save graph to', graph_file)
+        torch.save(modules_optims[0], graph_file)
 
     # save ckpt
     if cfg.log_to_file:

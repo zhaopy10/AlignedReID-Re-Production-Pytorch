@@ -305,7 +305,7 @@ class ExtractFeature(object):
     #print('ims shape', ims.shape)
     global_feat, local_feat = self.model(ims)[:2]
     global_feat = global_feat.data.cpu().numpy()
-    local_feat = local_feat.data.cpu().numpy()
+    #local_feat = local_feat.data.cpu().numpy()
     # Restore the model to its old train/eval mode.
     self.model.train(old_train_eval_model)
     return global_feat, local_feat
@@ -356,8 +356,10 @@ def main():
   # Models  #
   ###########
 
-  model = Model(local_conv_out_channels=cfg.local_conv_out_channels,
-                num_classes=len(train_set.ids2labels))
+  #model = Model(local_conv_out_channels=cfg.local_conv_out_channels,
+  #              num_classes=len(train_set.ids2labels))
+  model = Model(local_conv_out_channels=cfg.local_conv_out_channels,num_classes=None)
+
 
   # Model wrapper
   model_w = DataParallel(model)
@@ -482,7 +484,8 @@ def main():
       labels_t = TVT(torch.from_numpy(labels).long())
       labels_var = Variable(labels_t)
 
-      global_feat, local_feat, logits = model_w(ims_var)
+      #global_feat, local_feat, logits = model_w(ims_var)
+      global_feat, local_feat = model_w(ims_var)
 
       g_loss, p_inds, n_inds, g_dist_ap, g_dist_an, g_dist_mat = global_loss(
         g_tri_loss, global_feat, labels_t,
@@ -501,8 +504,8 @@ def main():
           normalize_feature=cfg.normalize_feature)
 
       id_loss = 0
-      if cfg.id_loss_weight > 0:
-        id_loss = id_criterion(logits, labels_var)
+      #if cfg.id_loss_weight > 0:
+      #  id_loss = id_criterion(logits, labels_var)
 
       loss = g_loss * cfg.g_loss_weight \
              + l_loss * cfg.l_loss_weight \

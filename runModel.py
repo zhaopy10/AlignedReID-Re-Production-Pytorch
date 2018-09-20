@@ -328,10 +328,11 @@ def main():
   global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
   print('global_q_g_dist\n', global_q_g_dist)
   '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
+  #img_path = '/home/corp.owlii.com/peiyao.zhao/reid/Half_Full'
   #interest_ids = ['27']
+  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
   
-  for i in range(1,28):
+  for i in range(1,22):
     #path_name = img_path%(i)
     img_set = []
     interest_ids = [i]
@@ -339,6 +340,7 @@ def main():
     filenames = [f for f in listdir(path_name) if isfile(join(path_name, f))]
     file_dict = {}
     for name in filenames:
+      #split_names = name.split('-')
       split_names = name.split('-')
       if not int(split_names[0]) in interest_ids:
         continue

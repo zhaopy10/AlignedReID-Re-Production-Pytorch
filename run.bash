@@ -7,9 +7,9 @@ python script/experiment/train.py \
 -idlw 0 \
 --only_test true \
 --set_seed true \
---model_weight_file ./douyin_0821/model_weights.pth \
+--model_weight_file ./douyin_with_mobilenetv2/model_weights.pth \
 --exp_dir eval_test \
---eval_crop True \
+--eval_crop false \
 --eval_down false
 
 #--model_weight_file ~/reid/pretrained_model/model_weight.pth  \

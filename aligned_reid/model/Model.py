@@ -4,10 +4,10 @@ import torch.nn.init as init
 import torch.nn.functional as F
 
 from .resnet import resnet50
-from .MobileNetV2 import MobileNetV2
+from .MobileNetV2_Relu import MobileNetV2
 
 class Model(nn.Module):
-  
+  '''
   def __init__(self, local_conv_out_channels=128, num_classes=None):
     super(Model, self).__init__()
     self.base = resnet50(pretrained=True)
@@ -20,22 +20,22 @@ class Model(nn.Module):
       self.fc = nn.Linear(planes, num_classes)
       init.normal(self.fc.weight, std=0.001)
       init.constant(self.fc.bias, 0)
-  
-
   '''
+
+  
   def __init__(self, local_conv_out_channels=128, num_classes=None):
     super(Model, self).__init__()
-    self.base = MobileNetV2(pretrained=True)
+    self.base = MobileNetV2(pretrained=False)
     planes = 1280
-    self.local_conv = nn.Conv2d(planes, local_conv_out_channels, 1)
-    self.local_bn = nn.BatchNorm2d(local_conv_out_channels)
-    self.local_relu = nn.ReLU(inplace=True)
+    #self.local_conv = nn.Conv2d(planes, local_conv_out_channels, 1)
+    #self.local_bn = nn.BatchNorm2d(local_conv_out_channels)
+    #self.local_relu = nn.ReLU(inplace=True)
 
-    if num_classes is not None:
-      self.fc = nn.Linear(planes, num_classes)
-      init.normal(self.fc.weight, std=0.001)
-      init.constant(self.fc.bias, 0)
-  '''
+    #if num_classes is not None:
+    #  self.fc = nn.Linear(planes, num_classes)
+    #  init.normal(self.fc.weight, std=0.001)
+    #  init.constant(self.fc.bias, 0)
+  
 
   def forward(self, x):
     """
@@ -49,14 +49,16 @@ class Model(nn.Module):
     global_feat = F.avg_pool2d(feat, feat.size()[2:])
     # shape [N, C]
     global_feat = global_feat.view(global_feat.size(0), -1)
+    
+    local_feat = []
     # shape [N, C, H, 1]
-    local_feat = torch.mean(feat, -1, keepdim=True)
-    local_feat = self.local_relu(self.local_bn(self.local_conv(local_feat)))
+    #local_feat = torch.mean(feat, -1, keepdim=True)
+    #local_feat = self.local_relu(self.local_bn(self.local_conv(local_feat)))
     # shape [N, H, c]
-    local_feat = local_feat.squeeze(-1).permute(0, 2, 1)
+    #local_feat = local_feat.squeeze(-1).permute(0, 2, 1)
 
-    if hasattr(self, 'fc'):
-      logits = self.fc(global_feat)
-      return global_feat, local_feat, logits
+    #if hasattr(self, 'fc'):
+    #  logits = self.fc(global_feat)
+    #  return global_feat, local_feat, logits
 
     return global_feat, local_feat

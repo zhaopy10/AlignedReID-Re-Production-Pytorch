@@ -1,0 +1,25 @@
+python script/experiment/train_ml.py \
+-d '((2,),(3,))' \
+-r 1 \
+--num_models 2 \
+--dataset market1501 \
+--ids_per_batch 32 \
+--ims_per_id 4 \
+--normalize_feature false \
+-gm 0.3 \
+-glw 1 \
+-llw 0 \
+-idlw 0 \
+-pmlw 0 \
+-gdmlw 1 \
+-ldmlw 0 \
+--base_lr 2e-4 \
+--lr_decay_type exp \
+--exp_decay_at_epoch 150 \
+--total_epochs 300 \
+--exp_dir market_with_mobilenetv2_ml \
+--set_seed True  \
+--train_crop False \
+--eval_crop False \
+--train_down False \
+--eval_down False
