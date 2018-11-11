@@ -13,7 +13,7 @@ def create_dataset(
     name='market1501',
     part='trainval',
     **kwargs):
-  assert name in ['market1501', 'cuhk03', 'duke', 'combined','msmt17', 'douyin'], \
+  assert name in ['market1501','market1501_seg', 'cuhk03', 'duke', 'combined','msmt17', 'douyin','owlii','owlii_seg'], \
     "Unsupported Dataset {}".format(name)
 
   assert part in ['trainval', 'train', 'val', 'test'], \
@@ -26,6 +26,10 @@ def create_dataset(
   if name == 'market1501':
     im_dir = ospeu('~/reid/dataset/market1501/images')
     partition_file = ospeu('~/reid/dataset/market1501/partitions.pkl')
+  
+  elif name == 'market1501_seg':
+    im_dir = ospeu('~/reid/dataset/market1501_seg/images')
+    partition_file = ospeu('~/reid/dataset/market1501_seg/partitions.pkl')
 
   elif name == 'cuhk03':
     im_type = ['detected', 'labeled'][0]
@@ -47,6 +51,12 @@ def create_dataset(
   elif name == 'douyin':
     im_dir = ospeu('~/reid/dataset/douyin_0821/images')
     partition_file = ospeu('~/reid/dataset/douyin_0821/partitions.pkl')
+  elif name == 'owlii':
+    im_dir = ospeu('~/reid/dataset/owlii_1017/images')
+    partition_file = ospeu('~/reid/dataset/owlii_1017/partitions.pkl')
+  elif name == 'owlii_seg':
+    im_dir = ospeu('~/reid/dataset/owlii_1017_seg/images')
+    partition_file = ospeu('~/reid/dataset/owlii_1017_seg/partitions.pkl')
 
   ##################
   # Create Dataset #

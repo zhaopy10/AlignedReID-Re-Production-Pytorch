@@ -8,8 +8,10 @@ import cv2
 from PIL import Image
 import math
 import random
+from skimage import exposure
+from skimage.io import imsave, imread
 
-def extend_ims(ims, crop=False, down_sample=False, padding=False):
+def extend_ims(ims, crop=False, down_sample=False, padding=False, gamma=True):
     #print('initial ims', type(ims))
     ims_list = [] 
     im_num = 1
@@ -19,6 +21,22 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False):
     else:
         ims_list.append(ims)
     extend = 1
+    
+    #print(len(ims_list))
+    
+    if gamma:
+        extend += 1
+        for i in range(0, im_num):
+            im_data = ims_list[i]
+            #print(type(im_data), im_data.shape)
+            gamma = 0.85 + 0.3 * random.random()
+            gain = 0.7 + 0.3 * random.random()
+            gamma_corrected = exposure.adjust_gamma(im_data, gamma, gain)
+            #imsave("original_img.jpg", im_data)
+            #imsave("gamma_img.jpg", gamma_corrected)
+            ims_list.append(gamma_corrected)
+            #print(gamma, gain)
+            #raw_input()
     
     if crop:
         extend += 1
@@ -71,6 +89,7 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False):
     #print('original size', len(ims_list), type(ims_list))
     extend = new_size
     
+    #print(len(random_ims_list))
     #ims_list = tuple(ims_list)
     #print('extended im list', extend, type(ims_list), len(ims_list))
     return random_ims_list, extend

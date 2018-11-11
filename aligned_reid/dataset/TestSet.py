@@ -268,8 +268,53 @@ class TestSet(Dataset):
       #print('g_inds size', np.sum(g_inds))
       global_q_g_dist = compute_dist(
         global_feats[q_inds], global_feats[g_inds], type='euclidean')
-      #print('global_q_g_dist size', global_q_g_dist.shape, 'global_q_g_dist', global_q_g_dist)
-
+      print('global_q_g_dist size', global_q_g_dist.shape, 'global_q_g_dist', global_q_g_dist)
+    
+    th_size = 20
+    threshold = [0.4 + 0.02 * i for i in range(th_size)]
+    same_right = [0 for _ in range(th_size)]
+    same_wrong = [0 for _ in range(th_size)]
+    diff_right = [0 for _ in range(th_size)]
+    diff_wrong = [0 for _ in range(th_size)]
+    q_ids=ids[q_inds]
+    q_names = im_names[q_inds]
+    g_ids = ids[g_inds]
+    g_names = im_names[g_inds]
+    print('q_names', q_names)
+    print('g_names', g_names)
+    same_pairs_1 = []
+    same_pairs_2 = []
+    same_pairs_dist = []
+    for th in range(len(threshold)):
+      #print(threshold[th])
+      for i in range(len(q_ids)):
+        for j in range(len(g_ids)):
+          squared_dist = global_q_g_dist[i][j]
+          if squared_dist < threshold[th]:
+            if q_ids[i] == g_ids[j]:
+              same_right[th] += 1
+            else:
+              diff_wrong[th] += 1
+          else:
+            if q_ids[i] == g_ids[j]:
+              same_wrong[th] += 1
+            else:
+              diff_right[th] += 1
+          '''  
+          if q_ids[i] == g_ids[j]:
+            same_pairs_1.append(q_names[i])
+            same_pairs_2.append(g_names[j])
+            same_pairs_dist.append(squared_dist)
+          '''
+      #print(len(same_pairs_1), same_pairs_1[-100:])
+      #print(len(same_pairs_2), same_pairs_2[-100:])
+      #print(len(same_pairs_dist), same_pairs_dist[-100:])
+      print('threshold', threshold[th])
+      print('same condition', same_wrong[th], same_wrong[th] + same_right[th], float(same_wrong[th])/(same_wrong[th]+same_right[th]))
+      print('diff condition', diff_wrong[th], diff_wrong[th] + diff_right[th], float(diff_wrong[th])/(diff_wrong[th]+diff_right[th]))
+    #for th in range(len(threshold)):
+      
+    
     with measure_time('Computing scores for Global Distance...'):
       mAP_return, cmc_scores_return = compute_score(global_q_g_dist)
     return mAP_return, cmc_scores_return

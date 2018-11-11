@@ -186,6 +186,7 @@ def resnet50(pretrained=False):
   model = ResNet(Bottleneck, [3, 4, 6, 3])
   if pretrained:
     model.load_state_dict(remove_fc(model_zoo.load_url(model_urls['resnet50'])))
+    print(model.state_dict().keys())
   return model
 
 

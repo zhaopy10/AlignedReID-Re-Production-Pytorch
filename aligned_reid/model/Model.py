@@ -4,7 +4,10 @@ import torch.nn.init as init
 import torch.nn.functional as F
 
 from .resnet import resnet50
-from .MobileNetV2_Relu import MobileNetV2
+#from .MobileNetV2_Relu import MobileNetV2
+from MobileNetV2_Relu_Scale import MobileNetV2
+#from .tf_resnet_to_pth import KitModel
+#import imp
 
 class Model(nn.Module):
   '''
@@ -25,7 +28,7 @@ class Model(nn.Module):
   
   def __init__(self, local_conv_out_channels=128, num_classes=None):
     super(Model, self).__init__()
-    self.base = MobileNetV2(pretrained=False)
+    self.base = MobileNetV2(pretrained=True)
     planes = 1280
     #self.local_conv = nn.Conv2d(planes, local_conv_out_channels, 1)
     #self.local_bn = nn.BatchNorm2d(local_conv_out_channels)
@@ -36,6 +39,24 @@ class Model(nn.Module):
     #  init.normal(self.fc.weight, std=0.001)
     #  init.constant(self.fc.bias, 0)
   
+    
+  '''
+  def __init__(self, local_conv_out_channels=128, num_classes=None):
+    super(Model, self).__init__()
+    MainModel = imp.load_source('MainModel', "/home/corp.owlii.com/peiyao.zhao/reid/AlignedReID-Re-Production-Pytorch/aligned_reid/model/tf_resnet_to_pth.py")
+    self.base = torch.load("/home/corp.owlii.com/peiyao.zhao/reid/AlignedReID-Re-Production-Pytorch/aligned_reid/model/tf_resnet_to_pth.pth")
+    
+    planes = 1280
+    #self.local_conv = nn.Conv2d(planes, local_conv_out_channels, 1)
+    #self.local_bn = nn.BatchNorm2d(local_conv_out_channels)
+    #self.local_relu = nn.ReLU(inplace=True)
+
+    #if num_classes is not None:
+    #  self.fc = nn.Linear(planes, num_classes)
+    #  init.normal(self.fc.weight, std=0.001)
+    #  init.constant(self.fc.bias, 0)
+  '''
+  
 
   def forward(self, x):
     """
@@ -45,6 +66,7 @@ class Model(nn.Module):
     """
     # shape [N, C, H, W]
     feat = self.base(x)
+    #feat = self.module(x)
     #print('feat shape', feat.shape)
     global_feat = F.avg_pool2d(feat, feat.size()[2:])
     # shape [N, C]

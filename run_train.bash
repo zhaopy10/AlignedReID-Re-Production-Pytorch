@@ -1,7 +1,7 @@
 python script/experiment/train.py \
--d '(0,)' \
+-d '(3,)' \
 -r 1 \
---dataset market1501 \
+--dataset owlii \
 --ids_per_batch 16 \
 --ims_per_id 8 \
 --normalize_feature false \
@@ -13,12 +13,10 @@ python script/experiment/train.py \
 --lr_decay_type exp \
 --exp_decay_at_epoch 150 \
 --total_epochs 300 \
---exp_dir market_with_mobilenetv2_relu_075 \
+--exp_dir owlii_1017_gamma_with_mobilenetv2_1.0_pyz \
 --set_seed True  \
---train_crop False \
---eval_crop False \
---train_down False \
---eval_down False
+--log_steps \
+
 #--resume True \
 #--trainset_part train
 #--ids_per_batch 32 \

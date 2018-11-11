@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 sys.path.insert(0, '.')
 
+
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -279,13 +280,9 @@ class ExtractFeature(object):
   def __call__(self, ims):
     old_train_eval_model = self.model.training
     # Set eval mode.
-    # Force all BN layers to use global mean and variance, also disable
-    # dropout.
     self.model.eval()
     ims = Variable(self.TVT(torch.from_numpy(ims).float()))
-    #f = open('data.pkl','w')
-    #pickle.dump(ims,f)
-    print('ims shape', ims.shape)
+    
     global_feat, local_feat = self.model(ims)[:2]
     global_feat = global_feat.data.cpu().numpy()
     #local_feat = local_feat.data.cpu().numpy()
@@ -300,8 +297,6 @@ def main():
   # Model wrapper
   model_w = DataParallel(model)
   
-  
-
   if cfg.model_weight_file != '':
     map_location = (lambda storage, loc: storage)
     sd = torch.load(cfg.model_weight_file, map_location=map_location)
@@ -310,82 +305,78 @@ def main():
   else:
     return
 
-  #model_w = model
-  print(model_w.training)
   model_w.training = False
-  #print(model.state_dict())
-  #raw_input()
-
+  
   pre_process_im = PreProcessIm(prng=np.random, resize_h_w=(256, 128), im_mean=[0.486, 0.459, 0.408], im_std=[0.229, 0.224, 0.225], mirror_type=None, batch_dims='NCHW',scale=True)
 
-  '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
-  img_set = []
-  for i in range(16,22):
-    img_name = (img_path+'/%d-01.jpg')%i
-    im = np.asarray(Image.open(img_name))
-    im_preprocessed, _ = pre_process_im(im)
-    print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
-    img_set.append(im_preprocessed)
-    
-  ims = np.stack(img_set, axis=0)
-  feat_extractor = ExtractFeature(model_w, TVT)
-  global_feat, local_feat = feat_extractor(ims)
-  print('Extract feature for images, global_feat', global_feat.shape, 'local_feat', local_feat.shape)
-  if cfg.normalize_feature:
-    global_feat = normalize(global_feat, axis=1)
-  global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
-  print('global_q_g_dist\n', global_q_g_dist)
-  '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/Half_Full'
-  #interest_ids = ['27']
-  #img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
   
-  for i in range(1,8):
-    #path_name = img_path%(i)
+  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/dataset/owlii_1017/images'
+  pairs_path = '/home/corp.owlii.com/peiyao.zhao/reid/dataset/owlii_1017/eval_pairs_all.pkl'
+  
+  f = open(pairs_path, 'r')
+  pair_data = pickle.load(f)
+  f.close()
+    
+  gt_label = []
+  detected_label = []
+  dist_vec = []
+
+  same_pairs_1 = []
+  same_pairs_2 = []
+  same_pairs_dist = []
+  for i in range(len(pair_data[0])):
     img_set = []
-    interest_ids = [i,i+1]
-    path_name = img_path
-    filenames = [f for f in listdir(path_name) if isfile(join(path_name, f))]
-    file_dict = {}
-    for name in filenames:
-      #split_names = name.split('-')
-      split_names = name.split('-')
-      if not int(split_names[0]) in interest_ids:
-        continue
-      num_split = split_names[1].split('.')
-      #file_dict[int(num_split[0])] = name
-      file_dict[name] = name
-      #file_dict[split_names[0]] = name
-    #print(file_dict)
-    file_tuple = sorted(file_dict.items(),key=lambda item:item[0])
-    #file_tuple = file_dict.items()
-    print(file_tuple)
-    for item in file_tuple:
-      img_name = path_name + '/' + item[1]
+    for j in range(2):
+      img_name = img_path + '/' + pair_data[j][i]
       im = np.asarray(Image.open(img_name))
       im_preprocessed, _ = pre_process_im(im)
-      #print(im_preprocessed)
-      #raw_input()
-      print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
+      #print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
       img_set.append(im_preprocessed)
-      #break
-        
-    ims = np.stack(img_set, axis=0)
     
+    ims = np.stack(img_set, axis=0)
     feat_extractor = ExtractFeature(model_w, TVT)
-    #print(ims[0,:,:,:])
-    #raw_input()
     global_feat, local_feat = feat_extractor(ims)
-    print('Extract feature for images, global_feat', global_feat.shape)
-    #print(global_feat)
-    #raw_input()
+    #print('Extract feature for images, global_feat', global_feat.shape)
     if cfg.normalize_feature:
       global_feat = normalize(global_feat, axis=1)
-    global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
-    print('global_q_g_dist\n', global_q_g_dist)
-  
+    diff_vec = global_feat[0,:] - global_feat[1,:]
+    #print(diff_vec.shape)
+    squared_dist = np.sqrt(np.sum(np.square(diff_vec)))
+    #print(squared_dist)
+    #raw_input()
+    if int(pair_data[0][i][0:8]) == int(pair_data[1][i][0:8]):
+      gt_label.append(1)
+      same_pairs_1.append(pair_data[0][i])
+      same_pairs_2.append(pair_data[1][i])
+      same_pairs_dist.append(squared_dist)
+    else:
+      gt_label.append(0)
+    
+    dist_vec.append(squared_dist)
+    #raw_input()
+    if i%100 == 1:
+      print(i)
+  print(len(same_pairs_1), same_pairs_1[-100:])
+  print(len(same_pairs_2), same_pairs_2[-100:])
+  print(len(same_pairs_dist), same_pairs_dist[-100:])
+  raw_input()
 
+  result = dict()
+  for threshold in range(100):
+    detected_label = []
+    thres = 0.0 + 1.0 * threshold / 100
+    for i in range(len(dist_vec)):
+      if dist_vec[i] < thres:
+        detected_label.append(1)
+      else:
+        detected_label.append(0)
+    result[thres] = detected_label
+
+  save_data = {'gt_label':gt_label, 'result':result, 'dist_vec':dist_vec}
+  f = open('eval_owlii/owlii_1.0_all_with_market.pkl', 'w')
+  pickle.dump(save_data, f)
+  f.close()
+    
 if __name__ == '__main__':
   main()
     

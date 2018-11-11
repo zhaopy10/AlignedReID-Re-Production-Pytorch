@@ -48,7 +48,7 @@ class Config(object):
     parser.add_argument('-r', '--run', type=int, default=1)
     parser.add_argument('--set_seed', type=str2bool, default=False)
     parser.add_argument('--dataset', type=str, default='market1501',
-                        choices=['market1501', 'cuhk03', 'duke', 'combined','msmt17','douyin'])
+                        choices=['market1501','market1501_seg', 'cuhk03', 'duke', 'combined','msmt17','douyin','owlii','owlii_seg'])
     parser.add_argument('--trainset_part', type=str, default='trainval',
                         choices=['trainval', 'train'])
 
@@ -230,7 +230,7 @@ class Config(object):
 
     # How often (in batches) to log. If only need to log the average
     # information for each epoch, set this to a large value, e.g. 1e10.
-    self.log_steps = 1e10
+    self.log_steps = 10
 
     # Only test and without training.
     self.only_test = args.only_test
@@ -312,8 +312,9 @@ class ExtractFeature(object):
 
 
 def main():
+  print('Enter')
   cfg = Config()
-
+  
   # Redirect logs to both console and file.
   if cfg.log_to_file:
     ReDirectSTD(cfg.stdout_file, 'stdout', False)
@@ -359,6 +360,8 @@ def main():
   #model = Model(local_conv_out_channels=cfg.local_conv_out_channels,
   #              num_classes=len(train_set.ids2labels))
   model = Model(local_conv_out_channels=cfg.local_conv_out_channels,num_classes=None)
+  #checkpoint = torch.load('/home/corp.owlii.com/peiyao.zhao/reid/AlignedReID-Re-Production-Pytorch/aligned_reid/model/model_best.pth.tar', map_location={ 'cuda:1':'cuda:0'})
+  #model.load_state_dict(checkpoint['state_dict'], strict=False)
 
 
   # Model wrapper
@@ -550,7 +553,7 @@ def main():
         id_loss_meter.update(to_scalar(id_loss))
 
       loss_meter.update(to_scalar(loss))
-
+      #print(step, cfg.log_steps)
       if step % cfg.log_steps == 0:
         time_log = '\tStep {}/Ep {}, {:.2f}s'.format(
           step, ep + 1, time.time() - step_st, )

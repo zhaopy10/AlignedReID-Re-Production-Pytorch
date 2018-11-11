@@ -279,19 +279,25 @@ class ExtractFeature(object):
   def __call__(self, ims):
     old_train_eval_model = self.model.training
     # Set eval mode.
-    # Force all BN layers to use global mean and variance, also disable
-    # dropout.
     self.model.eval()
     ims = Variable(self.TVT(torch.from_numpy(ims).float()))
-    #f = open('data.pkl','w')
-    #pickle.dump(ims,f)
-    print('ims shape', ims.shape)
+    
     global_feat, local_feat = self.model(ims)[:2]
     global_feat = global_feat.data.cpu().numpy()
     #local_feat = local_feat.data.cpu().numpy()
     # Restore the model to its old train/eval mode.
     self.model.train(old_train_eval_model)
     return global_feat, local_feat
+
+def split_names(names):
+    cid = []
+    fid = []
+    pid = []
+    for name in names:
+      cid.append(int(name[0:3]))
+      fid.append(int(name[4:6]))
+      pid.append(int(name[7:8]))
+    return cid, fid, pid
 
 def main():
   cfg = Config()
@@ -300,8 +306,6 @@ def main():
   # Model wrapper
   model_w = DataParallel(model)
   
-  
-
   if cfg.model_weight_file != '':
     map_location = (lambda storage, loc: storage)
     sd = torch.load(cfg.model_weight_file, map_location=map_location)
@@ -310,82 +314,130 @@ def main():
   else:
     return
 
-  #model_w = model
-  print(model_w.training)
   model_w.training = False
-  #print(model.state_dict())
-  #raw_input()
-
+  
   pre_process_im = PreProcessIm(prng=np.random, resize_h_w=(256, 128), im_mean=[0.486, 0.459, 0.408], im_std=[0.229, 0.224, 0.225], mirror_type=None, batch_dims='NCHW',scale=True)
 
+  
+  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/dataset/douyin_const_view/'
+    
+  files = [f for f in listdir(img_path) if isfile(join(img_path, f))]
+  files.sort()
+  #print(files)
+
+  cid, fid, pid = split_names(files)
+  #print(cid, fid, pid)
+  splited_info = dict()
+  for i in range(len(cid)):
+      if not cid[i] in splited_info:
+          splited_info[cid[i]] = []
+      item = {'fid':fid[i], 'pid':pid[i], 'name':files[i]}
+      splited_info[cid[i]].append(item)
+
+  th_size = 1
+  #threshold = [0.01 * i for i in range(100)]
+  threshold = [0.10 + 0.01 * i for i in range(th_size)]
+  cid_keys = splited_info.keys()
+  cid_keys.sort()
+  same_right = [0 for _ in range(th_size)]
+  same_wrong = [0 for _ in range(th_size)]
+  diff_right = [0 for _ in range(th_size)]
+  diff_wrong = [0 for _ in range(th_size)]
+
+  for key in cid_keys:
+      img_set = []
+      for item in splited_info[key]:
+          img_name = img_path + '/' + item['name']
+          im = np.asarray(Image.open(img_name))
+          #print('Read',img_name)
+          im_preprocessed, _ = pre_process_im(im)
+          #print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
+          img_set.append(im_preprocessed)
+      ims = np.stack(img_set, axis=0)
+      feat_extractor = ExtractFeature(model_w, TVT)
+      global_feat, local_feat = feat_extractor(ims)
+      #print('Extract feature for images, global_feat', global_feat.shape)
+      if cfg.normalize_feature:
+          global_feat = normalize(global_feat, axis=1)
+      for i in range(len(splited_info[key]) - 1):
+          for j in range(i+1):
+              diff_vec = global_feat[i+1,:] - global_feat[j,:]
+              squared_dist = np.sqrt(np.sum(np.square(diff_vec)))
+              for th in range(len(threshold)):
+                  if squared_dist < threshold[th]:
+                      if splited_info[key][i+1]['pid']==splited_info[key][j]['pid']:
+                          same_right[th] += 1
+                      else:
+                          diff_wrong[th] += 1
+                          print(splited_info[key][i+1]['name'], splited_info[key][j]['name'], squared_dist)
+                  else:
+                      if splited_info[key][i+1]['pid']==splited_info[key][j]['pid']:
+                          same_wrong[th] += 1
+                          print(splited_info[key][i+1]['name'], splited_info[key][j]['name'], squared_dist)
+                      else:
+                          diff_right[th] += 1
+  for th in range(len(threshold)):
+      print('threshold', threshold[th])
+      print('same condition', same_wrong[th], same_wrong[th] + same_right[th], float(same_wrong[th])/(same_wrong[th]+same_right[th]))
+      #print('diff condition', diff_wrong[th], diff_wrong[th] + diff_right[th], float(diff_wrong[th])/(diff_wrong[th]+diff_right[th]))
+
+  
+  
   '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
+  gt_label = []
+  detected_label = []
+  dist_vec = []
   img_set = []
-  for i in range(16,22):
-    img_name = (img_path+'/%d-01.jpg')%i
+
+
+
+
+  for name in files:
+    img_name = img_path + '/' + name
     im = np.asarray(Image.open(img_name))
     im_preprocessed, _ = pre_process_im(im)
-    print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
+    #print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
     img_set.append(im_preprocessed)
     
+  #img_set.sort()
+  #print(img_set)
   ims = np.stack(img_set, axis=0)
   feat_extractor = ExtractFeature(model_w, TVT)
   global_feat, local_feat = feat_extractor(ims)
-  print('Extract feature for images, global_feat', global_feat.shape, 'local_feat', local_feat.shape)
+  #print('Extract feature for images, global_feat', global_feat.shape)
   if cfg.normalize_feature:
     global_feat = normalize(global_feat, axis=1)
-  global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
-  print('global_q_g_dist\n', global_q_g_dist)
-  '''
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/Half_Full'
-  #interest_ids = ['27']
-  #img_path = '/home/corp.owlii.com/peiyao.zhao/reid/ReID-test'
   
-  for i in range(1,8):
-    #path_name = img_path%(i)
-    img_set = []
-    interest_ids = [i,i+1]
-    path_name = img_path
-    filenames = [f for f in listdir(path_name) if isfile(join(path_name, f))]
-    file_dict = {}
-    for name in filenames:
-      #split_names = name.split('-')
-      split_names = name.split('-')
-      if not int(split_names[0]) in interest_ids:
+  count = 0
+  wrong_count = 0
+  for i in range(len(files)):
+    case_id = cid[i]
+    frame_id = fid[i]
+    person_id = pid[i]
+    for k in range(i):
+      #print(files[i], files[k], case_id, cid[k])
+      if not cid[k]==case_id:
         continue
-      num_split = split_names[1].split('.')
-      #file_dict[int(num_split[0])] = name
-      file_dict[name] = name
-      #file_dict[split_names[0]] = name
-    #print(file_dict)
-    file_tuple = sorted(file_dict.items(),key=lambda item:item[0])
-    #file_tuple = file_dict.items()
-    print(file_tuple)
-    for item in file_tuple:
-      img_name = path_name + '/' + item[1]
-      im = np.asarray(Image.open(img_name))
-      im_preprocessed, _ = pre_process_im(im)
-      #print(im_preprocessed)
-      #raw_input()
-      print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
-      img_set.append(im_preprocessed)
-      #break
-        
-    ims = np.stack(img_set, axis=0)
-    
-    feat_extractor = ExtractFeature(model_w, TVT)
-    #print(ims[0,:,:,:])
-    #raw_input()
-    global_feat, local_feat = feat_extractor(ims)
-    print('Extract feature for images, global_feat', global_feat.shape)
-    #print(global_feat)
-    #raw_input()
-    if cfg.normalize_feature:
-      global_feat = normalize(global_feat, axis=1)
-    global_q_g_dist = compute_dist(global_feat, global_feat, type='euclidean')
-    print('global_q_g_dist\n', global_q_g_dist)
-  
-
+      
+      diff_vec = global_feat[k,:] - global_feat[i,:]
+      squared_dist = np.sqrt(np.sum(np.square(diff_vec)))
+      count += 1
+      if squared_dist < threshold:
+        if person_id == pid[k]:
+          right = 1
+        else:
+          right = 0
+      else:
+        if person_id == pid[k]:
+          right = 0
+        else:
+          right = 1
+      if right == 0:
+        print(files[i], files[k], squared_dist)
+        wrong_count += 1
+  print(global_feat.shape)
+  print(wrong_count, count, float(wrong_count) / count)
+  '''
 if __name__ == '__main__':
   main()
     
