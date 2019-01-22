@@ -8,18 +8,20 @@ import cv2
 from PIL import Image
 import math
 import random
-from skimage import exposure
-from skimage.io import imsave, imread
+import numpy as np
+#from skimage import exposure
+#from skimage.io import imsave, imread
+from torchvision.transforms.functional import adjust_gamma
 
-def extend_ims(ims, crop=False, down_sample=False, padding=False, gamma=True):
+def extend_ims(ims, crop=False, down_sample=False, padding=False, gamma=False):
     #print('initial ims', type(ims))
-    ims_list = [] 
+    PIL_ims_list = [] 
     im_num = 1
     if isinstance(ims, list):
         im_num = len(ims)
-        ims_list.extend(ims)    
+        PIL_ims_list.extend(ims)    
     else:
-        ims_list.append(ims)
+        PIL_ims_list.append(ims)
     extend = 1
     
     #print(len(ims_list))
@@ -27,14 +29,14 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False, gamma=True):
     if gamma:
         extend += 1
         for i in range(0, im_num):
-            im_data = ims_list[i]
+            im_data = PIL_ims_list[i]
             #print(type(im_data), im_data.shape)
             gamma = 0.85 + 0.3 * random.random()
             gain = 0.7 + 0.3 * random.random()
-            gamma_corrected = exposure.adjust_gamma(im_data, gamma, gain)
-            #imsave("original_img.jpg", im_data)
-            #imsave("gamma_img.jpg", gamma_corrected)
-            ims_list.append(gamma_corrected)
+            gamma_corrected = adjust_gamma(im_data, gamma, gain)
+            #im_data.save(open("original_img.jpg", 'w'))
+            #gamma_corrected.save(open("gamma_img.jpg", 'w'))
+            PIL_ims_list.append(gamma_corrected)
             #print(gamma, gain)
             #raw_input()
     
@@ -75,9 +77,11 @@ def extend_ims(ims, crop=False, down_sample=False, padding=False, gamma=True):
             #padded_im = cv2.resize(padded_im, (h, w), interpolation=cv2.INTER_LINEAR)
             ims_list.append(padded_im)
     if extend == 1:
+        ims_list = [np.asarray(f) for f in PIL_ims_list]
         return ims_list, extend
     
     # random sample to 2^n
+    ims_list = [np.asarray(f) for f in PIL_ims_list]
     
     #clip = math.floor(math.log(extend, 2))
     #new_size = int(math.pow(2, clip))

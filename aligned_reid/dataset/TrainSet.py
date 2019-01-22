@@ -65,7 +65,9 @@ class TrainSet(Dataset):
     else:
       inds = np.random.choice(inds, self.ims_per_id, replace=False)
     im_names = [self.im_names[ind] for ind in inds]      
-    ims = [np.asarray(Image.open(osp.join(self.im_dir, name)))
+    #ims = [np.asarray(Image.open(osp.join(self.im_dir, name)))
+    #       for name in im_names]
+    ims = [Image.open(osp.join(self.im_dir, name))
            for name in im_names]
     
     tmp_ims, extended_num = extend_ims(ims, crop=self.train_crop, down_sample=self.train_down, padding=self.train_padding)

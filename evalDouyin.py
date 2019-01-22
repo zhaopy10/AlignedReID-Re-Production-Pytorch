@@ -319,7 +319,7 @@ def main():
   pre_process_im = PreProcessIm(prng=np.random, resize_h_w=(256, 128), im_mean=[0.486, 0.459, 0.408], im_std=[0.229, 0.224, 0.225], mirror_type=None, batch_dims='NCHW',scale=True)
 
   
-  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/dataset/douyin_const_view/'
+  img_path = '/home/corp.owlii.com/peiyao.zhao/reid/dataset/douyin_pairs/'
     
   files = [f for f in listdir(img_path) if isfile(join(img_path, f))]
   files.sort()
@@ -334,9 +334,9 @@ def main():
       item = {'fid':fid[i], 'pid':pid[i], 'name':files[i]}
       splited_info[cid[i]].append(item)
 
-  th_size = 1
-  #threshold = [0.01 * i for i in range(100)]
-  threshold = [0.10 + 0.01 * i for i in range(th_size)]
+  th_size = 100
+  threshold = [0.01 * i for i in range(100)]
+  #threshold = [0.10 + 0.01 * i for i in range(th_size)]
   cid_keys = splited_info.keys()
   cid_keys.sort()
   same_right = [0 for _ in range(th_size)]
@@ -351,12 +351,12 @@ def main():
           im = np.asarray(Image.open(img_name))
           #print('Read',img_name)
           im_preprocessed, _ = pre_process_im(im)
-          #print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
+          print('read', img_name, 'with original size', im.shape, 'preprocessed size', im_preprocessed.shape)
           img_set.append(im_preprocessed)
       ims = np.stack(img_set, axis=0)
       feat_extractor = ExtractFeature(model_w, TVT)
       global_feat, local_feat = feat_extractor(ims)
-      #print('Extract feature for images, global_feat', global_feat.shape)
+      print('Extract feature for images, global_feat', global_feat)
       if cfg.normalize_feature:
           global_feat = normalize(global_feat, axis=1)
       for i in range(len(splited_info[key]) - 1):
@@ -369,17 +369,17 @@ def main():
                           same_right[th] += 1
                       else:
                           diff_wrong[th] += 1
-                          print(splited_info[key][i+1]['name'], splited_info[key][j]['name'], squared_dist)
+                          #print(splited_info[key][i+1]['name'], splited_info[key][j]['name'], squared_dist)
                   else:
                       if splited_info[key][i+1]['pid']==splited_info[key][j]['pid']:
                           same_wrong[th] += 1
-                          print(splited_info[key][i+1]['name'], splited_info[key][j]['name'], squared_dist)
+                          #print(splited_info[key][i+1]['name'], splited_info[key][j]['name'], squared_dist)
                       else:
                           diff_right[th] += 1
   for th in range(len(threshold)):
       print('threshold', threshold[th])
       print('same condition', same_wrong[th], same_wrong[th] + same_right[th], float(same_wrong[th])/(same_wrong[th]+same_right[th]))
-      #print('diff condition', diff_wrong[th], diff_wrong[th] + diff_right[th], float(diff_wrong[th])/(diff_wrong[th]+diff_right[th]))
+      print('diff condition', diff_wrong[th], diff_wrong[th] + diff_right[th], float(diff_wrong[th])/(diff_wrong[th]+diff_right[th]))
 
   
   

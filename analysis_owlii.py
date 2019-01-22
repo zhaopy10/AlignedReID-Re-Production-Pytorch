@@ -2,7 +2,7 @@ import os
 import pickle
 import numpy as np
 
-f = open('eval_owlii/owlii_1.0_all.pkl')
+f = open('eval_owlii/owlii_1.0_all_gamma.pkl')
 data = pickle.load(f)
 f.close()
 

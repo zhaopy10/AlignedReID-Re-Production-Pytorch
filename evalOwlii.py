@@ -373,7 +373,7 @@ def main():
     result[thres] = detected_label
 
   save_data = {'gt_label':gt_label, 'result':result, 'dist_vec':dist_vec}
-  f = open('eval_owlii/owlii_1.0_all_with_market.pkl', 'w')
+  f = open('eval_owlii/owlii_1.0_all_gamma.pkl', 'w')
   pickle.dump(save_data, f)
   f.close()
     

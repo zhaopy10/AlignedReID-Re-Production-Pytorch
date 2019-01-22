@@ -13,8 +13,8 @@ python script/experiment/train.py \
 --lr_decay_type exp \
 --exp_decay_at_epoch 150 \
 --total_epochs 300 \
---exp_dir owlii_1017_gamma_with_mobilenetv2_1.0_pyz \
---set_seed True  \
+--exp_dir owlii_1017_with_mobilenetv2_0.75_pyz_temp \
+--set_seed False  \
 --log_steps \
 
 #--resume True \

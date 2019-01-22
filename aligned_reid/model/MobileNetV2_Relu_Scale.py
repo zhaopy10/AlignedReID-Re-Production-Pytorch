@@ -77,9 +77,9 @@ def MobileNetV2(input_size=224, scale=1.0, pretrained=False):
                 continue
             state_dict[key[7:]] = state_dict[key]
             state_dict.pop(key)
-        print(len(state_dict.keys()))
-        for key, value in state_dict.items():
-            print('load key', key)
+        #print(len(state_dict.keys()))
+        #for key, value in state_dict.items():
+        #    print('load key', key)
         model.load_state_dict(state_dict, False)
     return model
 

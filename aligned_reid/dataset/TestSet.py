@@ -64,7 +64,8 @@ class TestSet(Dataset):
   def get_sample(self, ptr):
     im_name = self.im_names[ptr]
     im_path = osp.join(self.im_dir, im_name)
-    im = np.asarray(Image.open(im_path))
+    #im = np.asarray(Image.open(im_path))
+    im = Image.open(im_path)
     #print('im size', im.shape)
     
     # test 

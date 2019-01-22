@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 from .resnet import resnet50
 #from .MobileNetV2_Relu import MobileNetV2
-from MobileNetV2_Relu_Scale import MobileNetV2
+from MobileNetV2_Relu_Scale_075 import MobileNetV2
 #from .tf_resnet_to_pth import KitModel
 #import imp
 
